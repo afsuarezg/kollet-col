@@ -8,6 +8,7 @@ let db: Database.Database;
 
 export function getDb(): Database.Database {
   if (!db) {
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
     db = new Database(DB_PATH);
     db.pragma('journal_mode = DELETE');
     db.pragma('foreign_keys = ON');
