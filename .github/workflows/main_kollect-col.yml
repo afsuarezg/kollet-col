@@ -12,13 +12,13 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+      image: node:22-bullseye
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
+      - name: Install zip
+        run: apt-get install -y zip
 
       - name: Install dependencies
         run: npm install
