@@ -8,6 +8,11 @@ node_modules/
 # Build output
 dist/
 dist-ssr/
+*.tsbuildinfo
+.vite/
+
+# Claude Code
+.claude/
 
 # Environment
 .env
