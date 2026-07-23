@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, ApiError, type Me } from '../lib/api';
 import { formatCOP } from '../lib/formatters';
-import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 
 interface CaseRow {
   id: number;
@@ -42,6 +42,19 @@ export function CaseList() {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<CasesResp | null>(null);
   const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<Me | null>(null);
+  const [authDenied, setAuthDenied] = useState(false);
+
+  useEffect(() => {
+    api.me()
+      .then(setMe)
+      // Only a genuine 403 means "signed in but outside the allowed domains."
+      // Transient errors (500, network, session-expiry redirect) must NOT be
+      // mislabeled as an authorization denial.
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 403) setAuthDenied(true);
+      });
+  }, []);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -60,6 +73,27 @@ export function CaseList() {
 
   const totalPages = result ? Math.ceil(result.total / 50) : 1;
 
+  if (authDenied) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-bold text-slate-800 mb-2">Acceso no autorizado</h1>
+          <p className="text-sm text-slate-500 mb-6">
+            Tu cuenta no pertenece a un dominio autorizado para usar Kollect. Contacta al
+            administrador si crees que esto es un error.
+          </p>
+          <a
+            href="/.auth/logout"
+            className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+          >
+            <LogOut size={15} />
+            Salir
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
@@ -67,13 +101,28 @@ export function CaseList() {
           <h1 className="text-xl font-bold text-slate-800">Kollect</h1>
           <p className="text-xs text-slate-500">Gestión de Procesos Judiciales</p>
         </div>
-        <button
-          onClick={() => navigate('/casos/nuevo')}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
-        >
-          <Plus size={15} />
-          Nuevo Caso
-        </button>
+        <div className="flex items-center gap-4">
+          {me && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-slate-600 hidden sm:inline">{me.email}</span>
+              <a
+                href="/.auth/logout"
+                title="Cerrar sesión"
+                className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                <LogOut size={15} />
+                <span className="hidden sm:inline">Salir</span>
+              </a>
+            </div>
+          )}
+          <button
+            onClick={() => navigate('/casos/nuevo')}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+          >
+            <Plus size={15} />
+            Nuevo Caso
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
